@@ -91,9 +91,8 @@ function setMode(mode){
   currentMode = mode;
   document.getElementById('mode-stock').classList.toggle('active', mode==='stock');
   document.getElementById('mode-sold').classList.toggle('active', mode==='sold');
-  const tabs = document.getElementById('status-tabs');
-  tabs.style.display = mode === 'stock' ? '' : 'none';
-  if(mode === 'sold') filter = 'all';
+  document.getElementById('status-tabs').style.display = '';
+  filter = 'all';
   if(bulkMode) exitBulkMode();
   syncActiveFilterUI();
   render();
@@ -688,11 +687,12 @@ function render(){
     renderStockList(list, stockAccounts, q);
   } else {
     renderSoldStats(soldAccounts);
-    document.getElementById('status-tabs').style.display='none';
+    document.getElementById('status-tabs').style.display='';
     let list = soldAccounts.filter(a=>{
       const matchQ=!q||[a.name,a.mail,a.accId,a.cat,...(a.tags||[]),a.note,a.buyer,a.saleNote,a.username].join(' ').toLowerCase().includes(q);
+      const matchF=filter==='all'||getStatus(a.exp)===filter;
       const matchC=!cf||a.cat===cf;
-      return matchQ&&matchC;
+      return matchQ&&matchF&&matchC;
     });
     list = sortAccounts(list);
     renderSoldList(list, soldAccounts, q);
@@ -742,24 +742,30 @@ function renderStockStats(stock){
 }
 function renderSoldStats(sold){
   const total=sold.length;
-  const todayStr=new Date().toISOString().slice(0,10);
-  const today=sold.filter(a=>a.saleDate===todayStr).length;
+  const active=sold.filter(a=>getStatus(a.exp)==='ok').length;
+  const soon=sold.filter(a=>getStatus(a.exp)==='soon').length;
+  const expired=sold.filter(a=>getStatus(a.exp)==='expired').length;
   const revenue=sold.reduce((s,a)=>{ const n=parseFloat(String(a.salePrice||'').replace(/[^0-9.]/g,'')); return s+(isNaN(n)?0:n); }, 0);
   const revenueStr=revenue>0 ? '$'+revenue.toFixed(2) : '—';
   const hasChartData = sold.some(a=>a.saleDate&&a.salePrice);
   document.getElementById('stats').innerHTML=`
-    <div class="stat">
-      <div class="stat-num">${total}</div><div class="stat-lbl">Total Sold</div>
+    <div class="stat clickable ${filter==='all'?'active':''}" data-filter="all" onclick="setFilterDirect('all')">
+      <div class="stat-num">${total}</div><div class="stat-lbl">Total</div>
     </div>
-    <div class="stat">
-      <div class="stat-num green">${today}</div><div class="stat-lbl">Today</div>
+    <div class="stat clickable ${filter==='ok'?'active':''}" data-filter="ok" onclick="setFilterDirect('ok')">
+      <div class="stat-num green">${active}</div><div class="stat-lbl">Active</div>
     </div>
-    <div class="stat${hasChartData?' clickable stat-chart-btn':''}" style="grid-column:span 2" ${hasChartData?'onclick="showRevenueChart()"':''}>
+    <div class="stat clickable ${filter==='soon'?'active':''}" data-filter="soon" onclick="setFilterDirect('soon')">
+      <div class="stat-num amber">${soon}</div><div class="stat-lbl">Expiring</div>
+    </div>
+    <div class="stat clickable ${filter==='expired'?'active':''}" data-filter="expired" onclick="setFilterDirect('expired')">
+      <div class="stat-num red">${expired}</div><div class="stat-lbl">Expired</div>
+    </div>
+    <div class="stat${hasChartData?' clickable stat-chart-btn':''}" style="grid-column:span 4" ${hasChartData?'onclick="showRevenueChart()"':''}>
       <div class="stat-num" style="font-size:18px">${revenueStr}</div>
       <div class="stat-lbl">Total Revenue${hasChartData?' <span class="chart-hint">↗ chart</span>':''}</div>
     </div>`;
 }
-
 function highlightText(text, q){
   if(!q || !text) return escHtml(text);
   const safe = escHtml(text);
