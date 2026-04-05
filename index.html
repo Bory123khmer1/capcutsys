@@ -6,10 +6,12 @@
   <title>Account Manager</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
+
 </head>
 <body>
 
   <!-- PIN Lock Screen -->
+    
   <div class="pin-screen" id="pin-screen">
     <div class="pin-card" id="pin-card">
       <div class="pin-logo">
@@ -87,13 +89,13 @@
     <div class="mode-toggle-wrap">
       <div class="mode-toggle">
         <button class="mode-btn active" id="mode-stock" onclick="setMode('stock')">
-          <span class="mode-icon">📦</span>
-          <span class="mode-label">In Stock</span>
+          <span class="mode-icon">✅</span>
+          <span class="mode-label">Sold</span>
           <span class="mode-count" id="cnt-stock">0</span>
         </button>
         <button class="mode-btn" id="mode-sold" onclick="setMode('sold')">
-          <span class="mode-icon">✅</span>
-          <span class="mode-label">Sold</span>
+          <span class="mode-icon">📦</span>
+          <span class="mode-label">In Stock</span>
           <span class="mode-count" id="cnt-sold">0</span>
         </button>
       </div>
