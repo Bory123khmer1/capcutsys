@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Account Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- PIN Lock Screen -->
+  <div class="pin-screen" id="pin-screen">
+    <div class="pin-card" id="pin-card">
+      <div class="pin-logo">
+        <svg viewBox="0 0 20 20"><path d="M3 4h14v2H3V4zm0 5h10v2H3V9zm0 5h14v2H3v-2z"/></svg>
+      </div>
+      <div class="pin-title" id="pin-title">Account Manager</div>
+      <div class="pin-sub" id="pin-sub">Enter your PIN to continue</div>
+      <div class="pin-dots" id="pin-dots">
+        <div class="pin-dot" id="d0"></div>
+        <div class="pin-dot" id="d1"></div>
+        <div class="pin-dot" id="d2"></div>
+        <div class="pin-dot" id="d3"></div>
+      </div>
+      <div class="pin-error hidden" id="pin-error">Incorrect PIN. Try again.</div>
+      <div class="pin-pad">
+        <button class="pin-key" onclick="pinKey('1')">1</button>
+        <button class="pin-key" onclick="pinKey('2')">2</button>
+        <button class="pin-key" onclick="pinKey('3')">3</button>
+        <button class="pin-key" onclick="pinKey('4')">4</button>
+        <button class="pin-key" onclick="pinKey('5')">5</button>
+        <button class="pin-key" onclick="pinKey('6')">6</button>
+        <button class="pin-key" onclick="pinKey('7')">7</button>
+        <button class="pin-key" onclick="pinKey('8')">8</button>
+        <button class="pin-key" onclick="pinKey('9')">9</button>
+        <button class="pin-key wide" onclick="pinClear()">Clear</button>
+        <button class="pin-key" onclick="pinKey('0')">0</button>
+        <button class="pin-key del" onclick="pinDel()">⌫</button>
+      </div>
+      <div id="pin-footer"></div>
+    </div>
+  </div>
+
+  <div class="app">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 20 20"><path d="M3 4h14v2H3V4zm0 5h10v2H3V9zm0 5h14v2H3v-2z"/></svg>
+        </div>
+        <span class="logo-text">Account Manager</span>
+      </div>
+      <div class="header-actions">
+        <div class="export-wrap">
+          <button class="btn-icon" title="Export / Import / Backup" onclick="toggleExport(event)">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 1v9M4 7l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="export-menu" id="export-menu">
+            <button onclick="exportFile('csv')">⬇ Export as CSV</button>
+            <button onclick="exportFile('json')">⬇ Export as JSON</button>
+            <div class="export-divider"></div>
+            <div class="export-section-lbl">Import as…</div>
+            <button onclick="triggerImportAs('stock')">📦 Import → In Stock</button>
+            <button onclick="triggerImportAs('sold')">✅ Import → Sold</button>
+            <div class="export-divider"></div>
+            <div class="export-section-lbl">Backup</div>
+            <button onclick="backupData()">💾 Save Backup</button>
+            <button onclick="triggerRestore()">♻️ Restore Backup</button>
+          </div>
+        </div>
+        <button class="btn-icon" id="dash-btn" title="Dashboard" onclick="openDashboard()">📊</button>
+        <button class="btn-icon" id="theme-btn" title="Toggle theme">🌙</button>
+        <button class="btn btn-primary" onclick="openModal()">+ Add</button>
+      </div>
+    </div>
+
+    <!-- Reminder banner -->
+    <div id="reminder-wrap"></div>
+
+    <!-- Stats -->
+    <div class="stats" id="stats"></div>
+
+    <!-- Main mode toggle: Stock / Sold -->
+    <div class="mode-toggle-wrap">
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-stock" onclick="setMode('stock')">
+          <span class="mode-icon">📦</span>
+          <span class="mode-label">In Stock</span>
+          <span class="mode-count" id="cnt-stock">0</span>
+        </button>
+        <button class="mode-btn" id="mode-sold" onclick="setMode('sold')">
+          <span class="mode-icon">✅</span>
+          <span class="mode-label">Sold</span>
+          <span class="mode-count" id="cnt-sold">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" id="search" placeholder="Search name, ID, email, tag, note…" oninput="render()">
+        <button class="search-clear" onclick="clearSearch()" title="Clear search">✕</button>
+      </div>
+      <div class="toolbar-row2">
+        <select id="sort-select" onchange="render()" title="Sort by">
+          <option value="date-desc">Newest first</option>
+          <option value="date-asc">Oldest first</option>
+          <option value="name-asc">Name A–Z</option>
+          <option value="name-desc">Name Z–A</option>
+          <option value="expiry-asc">Expiry soonest</option>
+          <option value="expiry-desc">Expiry latest</option>
+        </select>
+        <select id="cat-filter" onchange="render()" title="Filter by category">
+          <option value="">All categories</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Status tabs (only for stock mode) -->
+    <div class="tabs" id="status-tabs">
+      <button class="tab active" data-filter="all" onclick="setFilter(this,'all')">All</button>
+      <button class="tab" data-filter="ok" onclick="setFilter(this,'ok')">Active</button>
+      <button class="tab" data-filter="soon" onclick="setFilter(this,'soon')">Expiring</button>
+      <button class="tab" data-filter="expired" onclick="setFilter(this,'expired')">Expired</button>
+    </div>
+
+    <div id="list"></div>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal-bg" id="modal" onclick="bgClose(event)">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modal-title">Add Account</span>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+
+      <!-- Sold toggle inside modal -->
+      <div class="field sold-toggle-field">
+        <label>Status</label>
+        <div class="sold-toggle-wrap">
+          <button type="button" class="sold-toggle-btn active" id="st-stock" onclick="setModalSold(false)">📦 In Stock</button>
+          <button type="button" class="sold-toggle-btn" id="st-sold" onclick="setModalSold(true)">✅ Sold</button>
+        </div>
+        <div class="sold-info" id="sold-info" style="display:none">
+          <div class="field-row" style="margin-top:10px">
+            <div class="field">
+              <label>Buyer Name</label>
+              <input id="f-buyer" placeholder="e.g. John Doe" autocomplete="off">
+            </div>
+            <div class="field">
+              <label>Sale Price</label>
+              <input id="f-price" placeholder="e.g. $25" autocomplete="off">
+            </div>
+          </div>
+          <div class="field">
+            <label>Sale Date</label>
+            <input id="f-sold-date" type="date" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Sale Note</label>
+            <input id="f-sold-note" placeholder="Transaction note…" autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <div class="section-lbl">Basic Info</div>
+      <div class="field">
+        <label>Account Name *</label>
+        <input id="f-name" placeholder="e.g. Netflix Premium" autocomplete="organization">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Account ID</label>
+          <input id="f-accid" placeholder="Auto-generated" autocapitalize="characters" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <input id="f-cat" placeholder="e.g. Streaming" list="cat-list" oninput="syncSwatches()" autocomplete="off">
+          <datalist id="cat-list"></datalist>
+          <div class="color-swatches" id="color-swatches"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Tags <span style="font-weight:400;text-transform:none;font-size:11px">(comma separated)</span></label>
+        <input id="f-tags" placeholder="e.g. personal, annual" autocomplete="off">
+      </div>
+
+      <div class="section-lbl">Credentials</div>
+      <div class="field">
+        <label>Email *</label>
+        <input id="f-mail" type="email" placeholder="user@example.com" inputmode="email" autocomplete="username email">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Username</label>
+          <input id="f-username" placeholder="Optional" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Phone</label>
+          <input id="f-phone" type="tel" placeholder="Optional" inputmode="tel" autocomplete="tel">
+        </div>
+      </div>
+      <div class="field">
+        <label>Password <span style="font-weight:400;text-transform:none;font-size:11px">(stored locally)</span></label>
+        <div class="pw-input-wrap">
+          <input id="f-pw" type="password" placeholder="Optional" autocomplete="current-password" oninput="updatePwStrength()">
+          <button class="pw-eye" type="button" onclick="togglePwInput()" title="Show/hide">👁</button>
+        </div>
+        <div class="pw-strength"><div class="pw-strength-bar" id="pw-strength-bar" style="width:0%"></div></div>
+        <div class="field-note" id="pw-strength-lbl"></div>
+        <div class="pw-tools">
+          <button class="btn btn-sm" type="button" onclick="fillGeneratedPassword()">Generate strong password</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>2FA / Recovery Code</label>
+        <input id="f-2fa" placeholder="Backup code or TOTP seed" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Login URL</label>
+        <input id="f-url" type="url" placeholder="https://…" inputmode="url" autocomplete="off">
+      </div>
+
+      <div class="section-lbl">Dates</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Date Purchased</label>
+          <input id="f-buy" type="date" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Expiry Date</label>
+          <input id="f-exp" type="date" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="section-lbl">Notes</div>
+      <div class="field">
+        <label>Notes</label>
+        <textarea id="f-note" placeholder="Plan details, renewal info…" autocomplete="off"></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveAccount()">Save Account</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <input type="file" id="import-file" accept=".csv,.json,application/json,text/csv" hidden>
+  <input type="file" id="restore-file" accept=".json,application/json" hidden>
+
+  <!-- Revenue Chart Overlay -->
+  <div class="chart-overlay" id="chart-overlay" onclick="if(event.target===this)closeRevenueChart()">
+    <div class="chart-panel">
+      <div class="chart-panel-header">
+        <span class="chart-panel-title">📊 Monthly Revenue</span>
+        <button class="chart-close" onclick="closeRevenueChart()">×</button>
+      </div>
+      <canvas id="revenue-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Dashboard Overlay -->
+  <div class="dash-overlay" id="dash-overlay" onclick="if(event.target===this)closeDashboard()">
+    <div class="dash-panel">
+      <div class="dash-header">
+        <span class="dash-title">📊 Dashboard</span>
+        <button class="dash-close" onclick="closeDashboard()">×</button>
+      </div>
+      <div id="dash-content"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
